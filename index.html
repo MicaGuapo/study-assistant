@@ -111,7 +111,7 @@
         </div>
 
         <div class="footer">
-            Free · Powered by Gemini 2.5 Flash-Lite (⚡ Fast!) · <a onclick="document.getElementById('apiModal').classList.remove('hidden')">Set API key</a>
+            Free · ⚡ Powered by Gemini 2.5 Flash-Lite · <a onclick="document.getElementById('apiModal').classList.remove('hidden')">Set API key</a>
         </div>
     </div>
 
@@ -131,17 +131,16 @@
 
     <script>
         // ================================================================
-        //  GEMINI API — OPTIMIZED FOR SPEED
-        //  Uses gemini-2.5-flash-lite (fastest model)
-        //  With thinking_level: "low" for minimal latency
-        //  And true streaming via SSE
+        //  GEMINI API — ULTRA FAST with gemini-2.5-flash-lite
+        //  Uses streaming SSE for instant response appearance
+        //  No unnecessary fields — just speed.
         // ================================================================
 
         let API_KEY = localStorage.getItem('gemini_api_key') || '';
         let conversation = [];
         let isProcessing = false;
 
-        // Use the fastest model available
+        // The current fastest, most stable model
         const MODEL = 'gemini-2.5-flash-lite';
 
         const container = document.getElementById('messagesContainer');
@@ -188,22 +187,19 @@
             scrollToBottom();
 
             try {
-                // Build the request with speed optimizations
+                // Simple, clean request — only generationConfig
                 const requestBody = {
                     contents: conversation,
                     generationConfig: {
                         temperature: 0.7,
-                        maxOutputTokens: 1024,  // Reduced for speed
+                        maxOutputTokens: 1024,  // faster response
                         topP: 0.95
-                    },
-                    // CRITICAL: This disables the slow "thinking" feature
-                    thinkingConfig: {
-                        thinkingLevel: "LOW"
                     }
                 };
 
-                console.log('🚀 Sending optimized request to:', MODEL);
+                console.log('🚀 Sending request to:', MODEL);
 
+                // Use the streaming endpoint
                 const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?key=${API_KEY}&alt=sse`,
                     {
@@ -248,18 +244,17 @@
                                 const chunk = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                 if (chunk) {
                                     fullReply += chunk;
-                                    // Update the message with the new chunk
                                     msg.innerHTML = formatText(fullReply) + '▌';
                                     scrollToBottom();
                                 }
                             } catch (e) {
-                                // Skip invalid JSON
+                                // Ignore parse errors
                             }
                         }
                     }
                 }
 
-                // Remove the cursor and show final message
+                // Finalize
                 if (fullReply) {
                     msg.innerHTML = formatText(fullReply);
                     conversation.push({ role: 'model', parts: [{ text: fullReply }] });
@@ -343,7 +338,7 @@
                 keyError.style.display = 'none';
                 apiInput.value = '';
                 inputEl.focus();
-                addMessage('✅ API key saved! Using fast model: ' + MODEL, 'assistant');
+                addMessage('✅ API key saved! Using ' + MODEL, 'assistant');
             } else {
                 keyError.style.display = 'block';
                 keyError.textContent = '❌ Please paste your full API key.';
@@ -362,9 +357,8 @@
             setTimeout(() => { modal.classList.remove('hidden'); apiInput.focus(); }, 500);
         }
 
-        console.log('🚀 Study Assistant ready with OPTIMIZED model:', MODEL);
-        console.log('⚡ Using thinkingLevel: LOW for maximum speed');
-        console.log('📡 Using true SSE streaming');
+        console.log('🚀 Study Assistant ready with ULTRA FAST model:', MODEL);
+        console.log('📡 Using SSE streaming for instant responses.');
     </script>
 
 </body>
