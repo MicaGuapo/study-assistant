@@ -136,8 +136,7 @@
 
     <script>
         // ================================================================
-        //  GEMINI API — AUTO-DISCOVERS THE RIGHT MODEL!
-        //  If one model doesn't work, it tries the next one.
+        //  GEMINI API — FIXED with CURRENT WORKING MODEL
         // ================================================================
 
         let API_KEY = localStorage.getItem('gemini_api_key') || '';
@@ -146,12 +145,11 @@
         let msgId = 0;
         let workingModel = localStorage.getItem('gemini_working_model') || '';
 
-        // List of models to try (in order of preference)
+        // CURRENT WORKING MODELS (February 2026)
         const MODELS = [
+            'gemini-3-flash-preview',
             'gemini-2.5-flash',
             'gemini-2.5-flash-lite',
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-lite',
             'gemini-1.5-flash',
             'gemini-1.5-flash-lite'
         ];
@@ -206,11 +204,13 @@
                 let reply = null;
                 let modelUsed = null;
 
-                // If we have a working model saved, try it first
+                // Try models one by one
                 let modelsToTry = MODELS;
                 if (workingModel && MODELS.includes(workingModel)) {
                     modelsToTry = [workingModel, ...MODELS.filter(m => m !== workingModel)];
                 }
+
+                let lastError = null;
 
                 for (const model of modelsToTry) {
                     try {
@@ -232,20 +232,24 @@
                             if (data.candidates && data.candidates.length > 0) {
                                 reply = data.candidates[0].content.parts[0].text;
                                 modelUsed = model;
-                                // Save working model
                                 workingModel = model;
                                 localStorage.setItem('gemini_working_model', model);
                                 break;
                             }
+                        } else {
+                            const errorData = await response.json();
+                            lastError = errorData.error?.message || `Model ${model} not available`;
+                            console.log(`❌ ${model}: ${lastError}`);
                         }
                     } catch (e) {
-                        // Try next model
+                        lastError = e.message;
+                        console.log(`❌ ${model}: ${e.message}`);
                         continue;
                     }
                 }
 
                 if (reply === null) {
-                    throw new Error('No available model found. Please try again later.');
+                    throw new Error(`No working model found. Last error: ${lastError || 'Unknown'}`);
                 }
 
                 // Stream the response
@@ -259,11 +263,7 @@
                 msg.innerHTML = formatText(reply);
                 conversation.push({ role: 'model', parts: [{ text: reply }] });
 
-                // Show which model was used (optional)
-                if (modelUsed) {
-                    // You can show this in a tiny footer if you want
-                    console.log(`✅ Used model: ${modelUsed}`);
-                }
+                console.log(`✅ Used model: ${modelUsed}`);
 
             } catch (error) {
                 addMessage(`❌ Error: ${error.message}`, 'error');
@@ -335,18 +335,13 @@
             if (key && key.length > 5) {
                 API_KEY = key;
                 localStorage.setItem('gemini_api_key', key);
-                // Reset working model so it tries all again
                 localStorage.removeItem('gemini_working_model');
                 workingModel = '';
                 modal.classList.add('hidden');
                 keyError.style.display = 'none';
                 apiInput.value = '';
                 inputEl.focus();
-                addMessage('✅ API key saved! Testing available models...', 'assistant');
-                // Test models in background
-                setTimeout(() => {
-                    addMessage('💡 Ready! Just type your question.', 'assistant');
-                }, 1000);
+                addMessage('✅ API key saved! Type your question.', 'assistant');
             } else {
                 keyError.style.display = 'block';
                 keyError.textContent = '❌ Please paste your full API key.';
@@ -365,8 +360,7 @@
             setTimeout(() => { modal.classList.remove('hidden'); apiInput.focus(); }, 500);
         }
 
-        console.log('🚀 Study Assistant ready with auto-model discovery!');
-        console.log('Available models:', MODELS.join(', '));
+        console.log('🚀 Study Assistant ready with models:', MODELS.join(', '));
     </script>
 
 </body>
